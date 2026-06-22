@@ -14,7 +14,7 @@ datasets = [
     "datasets/journal.pone.0158570_S2File_depression_heart_failure.csv"
 ]
 
-tracker = EmissionsTracker(output_file="reports/emissions_script1.csv")
+tracker = EmissionsTracker(output_file="CodeCarbon reports/emissions_script1.csv")
 tracker.start()
 
 averages_mcc = {}
@@ -49,3 +49,10 @@ tracker.stop()
 print("\nPerformance report:")
 for name, score in averages_mcc.items():
     print(f" - {name}: {score:.4f}")
+
+os.makedirs("mcc reports", exist_ok=True)
+report_df = pd.DataFrame(
+    [(name, score) for name, score in averages_mcc.items()],
+    columns=["dataset", "mcc"]
+)
+report_df.to_csv("mcc reports/mcc_report_script1.csv", index=False)
