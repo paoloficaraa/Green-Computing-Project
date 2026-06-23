@@ -46,10 +46,6 @@ for dataset in datasets:
 
 tracker.stop()
 
-print("\nPerformance report:")
-for name, score in averages_mcc.items():
-    print(f" - {name}: {score:.4f}")
-
 os.makedirs("mcc reports", exist_ok=True)
 report_df = pd.DataFrame(
     [(name, score) for name, score in averages_mcc.items()],
