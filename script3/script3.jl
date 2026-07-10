@@ -4,7 +4,6 @@ using Random
 using StatsBase
 using MLJ
 
-# Carica il modello nativo Julia DecisionTree (senza scikit-learn Python)
 RandomForestClassifier = @load RandomForestClassifier pkg=DecisionTree verbosity=0
 
 project_root = dirname(@__DIR__)
@@ -36,18 +35,14 @@ for dataset in datasets
 
     y = coerce(y_raw, Multiclass)
 
-    # Vettore pre-allocato per raccogliere l'MCC in modo thread-safe
     array_mcc = Vector{Float64}(undef, 100)
 
-    # Eseguiamo i 100 split in parallelo sfruttando i thread di Julia
     Threads.@threads for i in 0:99
         train_idx, test_idx = partition(eachindex(y), 0.7, stratify=y, rng=i)
 
         X_train, X_test = X[train_idx, :], X[test_idx, :]
         y_train, y_test = y[train_idx], y[test_idx]
 
-        # RF nativo Julia con 50 alberi
-        # Usiamo un seed diverso per ogni iterazione per evitare race condition sul RNG globale
         model = RandomForestClassifier(n_trees=50, rng=i)
 
         mach = machine(model, X_train, y_train)
@@ -59,12 +54,10 @@ for dataset in datasets
         array_mcc[i+1] = MatthewsCorrelation()(y_pred, y_test)
     end
 
-    # Memorizziamo il percorso relativo esatto (es: "datasets/...") per essere compatibili con compare_reports.py
     rel_path = replace(relpath(dataset, project_root), "\\" => "/")
     averages_mcc[rel_path] = mean(array_mcc)
 end
 
-# Scrittura del report MCC
 mkpath(joinpath(project_root, "mcc reports"))
 report_df = DataFrame(
     dataset=collect(keys(averages_mcc)),
