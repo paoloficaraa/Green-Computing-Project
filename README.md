@@ -14,7 +14,7 @@ Comparative analysis of energy consumption for Random Forest classification acro
 - [Measurement Methodology (Key Learning)](#measurement-methodology-key-learning)
   - [How CodeCarbon Measures Energy](#how-codecarbon-measures-energy)
   - [The Three Tracking Modes](#the-three-tracking-modes)
-  - [The EMI Bug: What We Discovered](#the-emi-bug-what-we-discovered)
+  - [The EMI Bug: What I Discovered](#the-emi-bug-what-i-discovered)
   - [Diagnosing the Problem](#diagnosing-the-problem)
   - [The Fix: windows_support Branch](#the-fix-windows_support-branch)
   - [Before vs. After EMI Comparison](#before-vs-after-emi-comparison)
@@ -43,6 +43,7 @@ This project compares the energy consumption and CO₂ emissions of three implem
 > **How much energy can be saved by using optimized code (fewer trees, smaller samples, parallelism) and by using a more efficient language (Julia vs. Python)?**
 
 Each experiment runs 100 stratified train/test splits on each of 5 datasets, and measures:
+
 - **Energy consumption** (in Watt-hours, Wh)
 - **CO₂ emissions** (in grams CO₂-eq)
 - **Execution time** (in seconds)
@@ -55,6 +56,7 @@ Each experiment runs 100 stratified train/test splits on each of 5 datasets, and
 ### 1. Baseline (`script1.py`)
 
 Standard Python implementation:
+
 - `RandomForestClassifier(n_estimators=100, random_state=42)`
 - Full dataset (100% rows)
 - Single-threaded (no `n_jobs` parameter)
@@ -63,6 +65,7 @@ Standard Python implementation:
 ### 2. Optimized Python (`script2.py`)
 
 Optimized Python implementation:
+
 - `RandomForestClassifier(n_estimators=50, random_state=42, n_jobs=-1)` — fewer trees, all cores
 - 50% row sampling (`sample(frac=0.5, random_state=42)`)
 - Parallelized via scikit-learn's joblib (`n_jobs=-1` internally uses `joblib.Parallel`)
@@ -71,6 +74,7 @@ Optimized Python implementation:
 ### 3. Julia Native (`script3/`)
 
 Pure Julia implementation (no PythonCall bridge):
+
 - `RandomForestClassifier(n_trees=50)` from `DecisionTree.jl` via `MLJDecisionTreeInterface`
 - 50% row sampling (Julia `StatsBase.sample`)
 - `Threads.@threads` for parallel execution across 100 splits
@@ -89,7 +93,7 @@ This section documents the most important technical discovery of this project: *
 
 CodeCarbon computes energy consumption as:
 
-```
+```text
 Energy = CPU_Power × Duration + GPU_Power × Duration + RAM_Power × Duration
 ```
 
@@ -97,11 +101,12 @@ The critical question is: **how is CPU_Power determined?**
 
 CodeCarbon queries the CPU's power consumption **every second** during execution and averages the samples. If it cannot get a hardware reading, it falls back to estimation:
 
-```
+```text
 CPU_Power_estimated = TDP × (cpu_utilization_percent / 100)
 ```
 
 Where:
+
 - **TDP** (Thermal Design Power) is a constant — the chip's maximum rated thermal output
 - **cpu_utilization_percent** is polled from `psutil.cpu_percent()` every second
 
@@ -110,12 +115,12 @@ Where:
 CodeCarbon has three CPU tracking methods, in order of preference:
 
 | # | Method | Source | Accuracy | Platforms |
-|---|--------|--------|----------|-----------|
+| --- | --- | --- | --- | --- |
 | 1 | **RAPL** (Running Average Power Limit) | Hardware energy counters via `perf_event_open()` (Linux) or `IntelPowerGadget` (macOS) | **Very High** (real hardware registers) | Linux, macOS |
 | 2 | **Windows EMI** (Energy Meter Interface) | Hardware energy counters via Windows Power Management API | **Very High** (same RAPL registers, different OS API) | Windows only |
 | 3 | **CPU Load Estimation** | `TDP × cpu_utilization_percent` | **Low** (estimated, not measured) | Fallback on all OS |
 
-### The EMI Bug: What We Discovered
+### The EMI Bug: What I Discovered
 
 **The problem:** CodeCarbon v3.2.8 (the latest stable release on PyPI) has Windows EMI support **disabled by default** in its tracking mode selection logic. When running on Windows, instead of trying EMI, it falls through to the estimation method. This is a known issue tracked in [CodeCarbon PR #1263](https://github.com/mlco2/codecarbon/pull/1263) ("Tracking on Windows: add Windows Energy Meter Interface").
 
@@ -125,9 +130,9 @@ CodeCarbon has three CPU tracking methods, in order of preference:
 
 ### Diagnosing the Problem
 
-We discovered the issue during result analysis. The initial measurements showed:
+I discovered the issue during result analysis. The initial measurements showed:
 
-```
+```text
 # OLD (before EMI fix) — suspicious results
 Script          CPU_Power   CPU_Util    Duration   Energy
 Baseline        10.97W      ~8%         72.0s      0.960 Wh
@@ -140,7 +145,7 @@ The scripts should have similar CPU power (all running on the same i7-9700K proc
 **Root cause:** The `cpu_utilization_percent` polling loop in CodeCarbon was missing the joblib child processes:
 
 | Script | Parallel Model | Process Visibility to psutil | Reported CPU Util | Estimated Power |
-|--------|---------------|------------------------------|-------------------|-----------------|
+| --- | --- | --- | --- | --- |
 | Baseline (no n_jobs) | None (single-threaded) | Main thread only | ~8% | ~11W (TDP=95W × 8%) |
 | Optimized (n_jobs=-1) | joblib multiprocessing | Child processes not polled | ~0% | ~11W (effectively idle power) |
 | Julia (Threads.@threads) | OS threads in same process | Same process, all threads | ~44% | ~59W |
@@ -151,16 +156,17 @@ The scripts should have similar CPU power (all running on the same i7-9700K proc
 
 ### The Fix: `windows_support` Branch
 
-To get accurate hardware measurements on Windows, we installed CodeCarbon from the `windows_support` branch of the official repository:
+To get accurate hardware measurements on Windows, I installed CodeCarbon from the `windows_support` branch of the official repository:
 
-```
+```bash
 pip install git+https://github.com/mlco2/codecarbon.git@windows_support
 ```
 
 This branch contains the EMI implementation from PR #1263 and properly activates Windows Energy Meter Interface (EMI) as the tracking method instead of the estimation fallback.
 
 **Verification:** After installation, CodeCarbon reports:
-```
+
+```text
 CPU Tracking Method: Windows EMI
 ```
 
@@ -169,19 +175,20 @@ And queries the RAPL energy counters directly via the Windows Power Management A
 ### Before vs. After EMI Comparison
 
 | Metric | Without EMI (v3.2.8) | With EMI (RAPL hardware) | Δ |
-|--------|---------------------|-------------------------|---|
+| --- | --- | --- | --- |
 | **CPU Tracking Method** | `cpu_load` (estimation) | `Windows EMI` (hardware) | — |
 | **Baseline CPU Power** | 10.97 W | 54.0 W | **+392%** |
 | **Optimized CPU Power** | 11.70 W | 61.4 W | **+425%** |
 | **Julia CPU Power** | 58.93 W | 62.7 W | +6% |
 
 | Script | Energy (old) | Energy (EMI) | Old Conclusion | Correct Conclusion |
-|--------|-------------|-------------|---------------|-------------------|
+| --- | --- | --- | --- | --- |
 | Baseline | 0.960 Wh | 1.738 Wh | — (baseline) | — (baseline) |
 | Optimized | 0.648 Wh | 1.127 Wh | −32.5% energy (seems good) | **−35.2%** energy (still good!) |
 | Julia | 0.959 Wh | 1.013 Wh | −0.1% energy (same as baseline!) | **−41.7%** energy (clear winner!) |
 
 **Key insights:**
+
 1. The old method **under-estimated ALL Python scripts**, not just the optimized one. Even baseline was at 11W instead of 54W.
 2. The old method was **most biased against Julia** (measured correctly at ~59W) vs. Python (under-estimated at ~11W).
 3. With EMI, **all scripts are measured with the same hardware metric**, and the comparison is fair.
@@ -207,11 +214,12 @@ Julia's `Threads.@threads` does not suffer from this because threads share the s
 This project demonstrates two CodeCarbon integration patterns:
 
 | Pattern | Description | Files | When to Use |
-|---------|-------------|-------|-------------|
+| --- | --- | --- | --- |
 | **Internal** | `EmissionsTracker` wraps the Python code directly. Tracker starts → Python computation → tracker stops. | `script1.py`, `script2.py` | Best when the computation is in Python |
 | **External** | CodeCarbon runs as a separate orchestrator that launches the computation as a subprocess (Julia, C++, etc.) and monitors system-wide energy. | `script3/run_script3.py` | Necessary when the computation is in a non-Python language. Also useful for isolating measurement overhead. |
 
 The `run_script3.py` orchestrator:
+
 1. Deletes any previous emissions CSV (CodeCarbon appends by default)
 2. Starts CodeCarbon tracking
 3. Launches `julia -t auto --project=script3 script3/script3.jl` as a subprocess
@@ -227,7 +235,7 @@ This is the cleanest approach for measuring non-Python code — the Julia proces
 ### Final Comparison Table
 
 | Script | Duration (s) | Energy (Wh) | CO₂ (g) | Avg MCC | Energy Reduction |
-|--------|-------------|-------------|---------|---------|-----------------|
+| --- | --- | --- | --- | --- | --- |
 | **Baseline Python** | 73.2 s | 1.738 Wh | 0.575 g | 0.599 | — |
 | **Optimized Python** | 46.6 s | 1.127 Wh | 0.373 g | 0.582 | **−35.2%** |
 | **Julia** | 35.6 s | 1.013 Wh | 0.335 g | 0.594 | **−41.7%** |
@@ -235,7 +243,7 @@ This is the cleanest approach for measuring non-Python code — the Julia proces
 ### Key Takeaways
 
 | Conclusion | Detail |
-|-----------|--------|
+| --- | --- |
 | **Optimizations work** | −36% time, −35% energy, only −2.8% accuracy loss (MCC 0.599 → 0.582) |
 | **Julia is more efficient** | −51% time, −42% energy vs baseline, with **no accuracy loss** (MCC 0.599 → 0.594) |
 | **Julia vs. optimized Python** | Julia uses 10.1% less energy than optimized Python at similar accuracy |
@@ -244,7 +252,7 @@ This is the cleanest approach for measuring non-Python code — the Julia proces
 
 ### Visual Comparison of CPU Power Readings
 
-```
+```text
 CPU Power (Watts) — Higher is better (means the real consumption is captured)
 ┌────────────────────────────────────────────────────────────┐
 │  Old (estimation)     New (EMI hardware counters)          │
@@ -264,7 +272,7 @@ CPU Power (Watts) — Higher is better (means the real consumption is captured)
 Five bio/health informatics datasets from peer-reviewed open-access publications:
 
 | Dataset | File | Target | Rows | Features |
-|---------|------|--------|------|----------|
+| --- | --- | --- | --- | --- |
 | Neuroblastoma (YM2018) | `10_7717_peerj_5665_dataYM2018_neuroblastoma.csv` | Binary | ~500–1000 | ~6–12 |
 | Pediatric Brain Tumor (Belgrade 2021) | `dataset_Belgrade2021_pediatric_brain_tumor_...` | Multiclass | ~300–600 | ~8–16 |
 | Colorectal Cancer EHRs (Taipei 2018) | `dataset_Taipei2018_colorectal_cancer_EHRs_...` | Binary | ~1000–2000 | ~10–20 |
@@ -325,7 +333,8 @@ pip install pandas numpy scikit-learn
 ```
 
 **Verification:** Run a quick test, then check the emissions CSV. The `cpu_power` column should show realistic values (~30–90 W depending on workload), and in the CodeCarbon console output you should see:
-```
+
+```text
 CPU Tracking Method: Windows EMI
 ```
 
@@ -338,6 +347,7 @@ julia --project=script3 -e 'using Pkg; Pkg.instantiate()'
 ```
 
 If you encounter dependency issues:
+
 ```bash
 julia --project=script3 -e 'using Pkg; Pkg.add(["CSV", "DataFrames", "MLJ", "MLJDecisionTreeInterface", "StatsBase"])'
 ```
@@ -359,6 +369,7 @@ python compare_reports.py
 ```
 
 Outputs:
+
 - `comparison reports/comparison.csv` — numeric table
 - `comparison reports/comparison.md` — Markdown table for the report
 
@@ -367,7 +378,7 @@ Outputs:
 ## Known Pitfalls & Lessons Learned
 
 | Pitfall | Symptom | Solution |
-|---------|---------|----------|
+| --- | --- | --- |
 | **CodeCarbon underestimates power on Windows** | CPU power readings of ~5–15W | Install from `windows_support` branch |
 | **Joblib multiprocessing invisible to psutil** | `cpu_utilization_percent` near 0% for Python scripts using `n_jobs=-1` | Use EMI for accurate hardware readings; or use `per_cpu=True` in psutil and sum across all cores |
 | **CodeCarbon appends to existing CSV** | Second run shows double the expected duration | Delete old emissions CSV before each run (done automatically by `run_script3.py`) |
