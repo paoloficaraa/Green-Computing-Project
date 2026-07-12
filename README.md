@@ -14,7 +14,7 @@ Comparative analysis of energy consumption for Random Forest classification acro
 - [Measurement Methodology (Key Learning)](#measurement-methodology-key-learning)
   - [How CodeCarbon Measures Energy](#how-codecarbon-measures-energy)
   - [The Three Tracking Modes](#the-three-tracking-modes)
-  - [The EMI Bug: What We Discovered](#the-emi-bug-what-we-discovered)
+  - [The EMI Bug: What I Discovered](#the-emi-bug-what-i-discovered)
   - [Diagnosing the Problem](#diagnosing-the-problem)
   - [The Fix: windows_support Branch](#the-fix-windows_support-branch)
   - [Before vs. After EMI Comparison](#before-vs-after-emi-comparison)
@@ -120,7 +120,7 @@ CodeCarbon has three CPU tracking methods, in order of preference:
 | 2 | **Windows EMI** (Energy Meter Interface) | Hardware energy counters via Windows Power Management API | **Very High** (same RAPL registers, different OS API) | Windows only |
 | 3 | **CPU Load Estimation** | `TDP × cpu_utilization_percent` | **Low** (estimated, not measured) | Fallback on all OS |
 
-### The EMI Bug: What We Discovered
+### The EMI Bug: What I Discovered
 
 **The problem:** CodeCarbon v3.2.8 (the latest stable release on PyPI) has Windows EMI support **disabled by default** in its tracking mode selection logic. When running on Windows, instead of trying EMI, it falls through to the estimation method. This is a known issue tracked in [CodeCarbon PR #1263](https://github.com/mlco2/codecarbon/pull/1263) ("Tracking on Windows: add Windows Energy Meter Interface").
 
@@ -130,7 +130,7 @@ CodeCarbon has three CPU tracking methods, in order of preference:
 
 ### Diagnosing the Problem
 
-We discovered the issue during result analysis. The initial measurements showed:
+I discovered the issue during result analysis. The initial measurements showed:
 
 ```text
 # OLD (before EMI fix) — suspicious results
@@ -156,7 +156,7 @@ The scripts should have similar CPU power (all running on the same i7-9700K proc
 
 ### The Fix: `windows_support` Branch
 
-To get accurate hardware measurements on Windows, we installed CodeCarbon from the `windows_support` branch of the official repository:
+To get accurate hardware measurements on Windows, I installed CodeCarbon from the `windows_support` branch of the official repository:
 
 ```bash
 pip install git+https://github.com/mlco2/codecarbon.git@windows_support
