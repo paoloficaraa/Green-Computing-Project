@@ -17,12 +17,13 @@ SCRIPTS = [
 
 
 def read_emissions(path: Path) -> dict | None:
-    """Read the CodeCarbon CSV and return duration, energy (Wh), CO2 (g)."""
+    """Read the CodeCarbon CSV and return duration, energy (Wh), CO2 (g) from the latest run."""
     with open(path, "r", newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
-        row = next(reader, None)
-        if row is None:
+        rows = list(reader)
+        if not rows:
             return None
+        row = rows[-1]
     return {
         "duration_s": float(row["duration"]),
         "energy_Wh": float(row["energy_consumed"]) * 1000.0,

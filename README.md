@@ -40,9 +40,10 @@ Comparative analysis of energy consumption for Random Forest classification acro
 
 This project compares the energy consumption and CO₂ emissions of three implementations of the same machine learning task (Random Forest classification on 5 bio/health informatics datasets) using **CodeCarbon** for measurement. The core research question:
 
-> **How much energy can be saved while preserving model quality by targeting the computational cost inside each tree, rather than by simply cutting the forest size or subsampling rows aggressively?**
+> **How much energy can be saved while preserving model quality by targeting the computational cost inside each tree and forest sizing, rather than by relying on aggressive row subsampling?**
 
-The revised strategy keeps the ensemble at 100 trees and reduces the workload per tree through shallower depth, higher minimum leaf/split thresholds, and variance-based feature filtering. This preserves ensemble diversity and leads to a better MCC/energy trade-off than the earlier 50-tree subsampling variant.
+The final strategy combines 60 regularized trees (`n_estimators=60`, `max_depth=12`, `min_samples_leaf=5`, `min_samples_split=10`), variance-based feature selection (top 60%, floor 8), and single-threaded Python execution (eliminating joblib multiprocessing overhead on small tabular datasets). This achieves a **42.88% energy reduction in Python** and **47.07% in Julia** while preserving an average MCC of **0.595 / 0.590** (against 0.599 baseline).
+
 Each experiment runs 100 stratified train/test splits on each of 5 datasets, and measures:
 
 - **Energy consumption** (in Watt-hours, Wh)
@@ -59,39 +60,33 @@ Each experiment runs 100 stratified train/test splits on each of 5 datasets, and
 Standard Python implementation:
 
 - `RandomForestClassifier(n_estimators=100, random_state=42)`
-- Full dataset (100% rows)
+- Full dataset (100% rows and features)
 - Single-threaded (no `n_jobs` parameter)
-- CodeCarbon **internal** tracking (tracker wraps the Python code)
+- CodeCarbon **internal** tracking
 
 ### 2. Optimized Python (`script2.py`)
 
-Revised optimized Python implementation:
+Optimized Python implementation (Variant E):
 
-- `RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)` — same forest size as baseline, but lighter trees
+- `RandomForestClassifier(n_estimators=60, random_state=42, n_jobs=1)`
 - `max_depth=12`
 - `min_samples_leaf=5`
 - `min_samples_split=10`
 - variance-based feature selection before training, keeping the top-ranked features up to roughly 60% of the original dimensionality with a minimum of 8 features
-- parallelized via scikit-learn's joblib (`n_jobs=-1`)
+- single-threaded execution (`n_jobs=1`) to avoid joblib process-pool spawn and IPC overhead on small EHR datasets
+- no row subsampling (preserves full clinical training distribution)
 - CodeCarbon **internal** tracking
-
-This strategy was chosen because reducing the number of trees and subsampling rows aggressively hurt model quality in the earlier version. The revised design targets the per-tree cost while preserving ensemble diversity and MCC.
 
 ### 3. Julia Native (`script3/`)
 
 Pure Julia implementation (no PythonCall bridge):
 
-- `RandomForestClassifier(n_trees=100)` from `DecisionTree.jl` via `MLJDecisionTreeInterface`
-- same regularized configuration as Python: `max_depth=12`, `min_samples_leaf=5`, `min_samples_split=10`
-- identical variance-based feature filtering applied before training, to keep the Python and Julia implementations aligned
-- `Threads.@threads` for parallel execution across 100 splits
+- `RandomForestClassifier(n_trees=60)` from `DecisionTree.jl` via `MLJDecisionTreeInterface`
+- identical regularized configuration: `max_depth=12`, `min_samples_leaf=5`, `min_samples_split=10`
+- identical variance-based feature filtering (top 60%, min 8)
+- `Threads.@threads` for native shared-memory parallel execution across 100 splits
 - Launched with `julia -t auto` to use all cores
-- CodeCarbon **external** tracking via `run_script3.py` — Julia runs as a subprocess, CodeCarbon monitors the system externally. This ensures a clean, unpolluted measurement (no Python libraries loaded inside Julia).
-
-> **Important:** The reported time includes Julia's JIT compilation overhead (cold start), making the comparison realistic. In production with a long-running server, Julia's compiled code would be faster per execution.
-
----
-
+- CodeCarbon **external** tracking via `run_script3.py`
 ## Measurement Methodology (Key Learning)
 
 This section documents the most important technical discovery of this project: **how CodeCarbon measures energy on Windows, and why the default method is unreliable for multiprocessing workloads.**
@@ -241,22 +236,20 @@ This is the cleanest approach for measuring non-Python code — the Julia proces
 
 ### Final Comparison Table
 
-| Script | Duration (s) | Energy (Wh) | CO₂ (g) | Avg MCC | Energy Reduction |
-| --- | --- | --- | --- | --- | --- |
-| **Baseline Python** | 73.22 s | 1.738 Wh | 0.575 g | 0.599 | — |
-| **Optimized Python** | 46.62 s | 1.127 Wh | 0.373 g | 0.595 | **−35.2%** |
-| **Julia** | 35.62 s | 1.013 Wh | 0.335 g | 0.594 | **−41.7%** |
+| Script | Duration (s) | Energy (Wh) | CO₂ (g) | Avg MCC | Energy Reduction | Time Reduction |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Baseline Python** | 73.22 s | 1.738 Wh | 0.575 g | 0.5990 | — | — |
+| **Optimized Python** | 43.41 s | 0.993 Wh | 0.328 g | 0.5946 | **−42.88%** | **−40.71%** |
+| **Julia Native** | 30.89 s | 0.920 Wh | 0.304 g | 0.5904 | **−47.07%** | **−57.81%** |
 
 ### Key Takeaways
 
 | Conclusion | Detail |
 | --- | --- |
-| **Revised strategy is better** | By keeping 100 trees and reducing per-tree burden, the optimized Python version improves MCC from 0.582 to 0.595 while preserving the same ~35% energy reduction |
-| **Julia remains the most efficient** | −51% time, −42% energy vs baseline, with MCC 0.594 (essentially the same as the baseline) |
-| **Python optimization now preserves quality** | The new configuration avoids the previous quality loss from aggressive 50-tree / 50% subsampling design |
-| **Measurement matters** | Without EMI hardware counters, the Julia advantage was completely invisible |
-| **CPU Power is the key metric** | All scripts used ~54–63W CPU power with EMI; without EMI, Python showed ~11W (wrong) |
-
+| **Variant E delivers superior balance** | Combining 60 regularized trees, 60% feature selection, and single-threaded Python cuts energy by **42.9%** while preserving **99.3% of baseline MCC** (0.5946 vs 0.5990). |
+| **Row subsampling avoided** | Empirical testing showed 50% row subsampling causes severe MCC degradation on imbalanced biomedical data (e.g. Sepsis MCC drops from 0.43 to 0.35). |
+| **Julia is the most efficient** | Completes in **30.89 s** (−57.8% duration) and uses **0.920 Wh** (−47.1% energy) with native threading. |
+| **Measurement fidelity** | With Windows EMI hardware counters, accurate RAPL energy readings are captured across Python and Julia without process-visibility blind spots. |
 ### Visual Comparison of CPU Power Readings
 
 ```text
