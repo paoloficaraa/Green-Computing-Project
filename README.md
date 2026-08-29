@@ -293,7 +293,7 @@ Each dataset has the target variable in the **last column**.
 │   ├── journal.pone.0148699_S1_Text_Sepsis_SIRS_EDITED.csv
 │   └── journal.pone.0158570_S2File_depression_heart_failure.csv
 ├── script1.py                                 # Baseline: RF (100 trees, 100 splits, no n_jobs)
-├── script2.py                                 # Optimized: RF (50 trees, 50% sample, n_jobs=-1)
+├── script2.py                                 # Optimized: RF (60 trees, regularized, 60% features, n_jobs=1)
 ├── script3/
 │   ├── Project.toml                           # Julia dependencies (DecisionTree, MLJ, etc.)
 │   ├── script3.jl                             # Julia native script (Threads.@threads)
@@ -303,7 +303,7 @@ Each dataset has the target variable in the **last column**.
 ├── LICENSE                                    # MIT license
 ├── CodeCarbon reports/                        # Auto-generated: emissions CSV from CodeCarbon
 ├── mcc reports/                               # Auto-generated: MCC results per dataset
-└── comparison reports/                        # Auto-generated: comparison.csv + .md table
+└── comparison reports/                        # Auto-generated: comparison.csv
 ```
 
 ---
@@ -370,8 +370,7 @@ python compare_reports.py
 
 Outputs:
 
-- `comparison reports/comparison.csv` — numeric table
-- `comparison reports/comparison.md` — Markdown table for the report
+- `comparison reports/comparison.csv` — numeric summary table with percentage reductions
 
 ---
 
