@@ -4,19 +4,6 @@ using Random
 using StatsBase
 using MLJ
 
-# ---------------------------------------------------------------------------
-# Julia implementation notes (Variant E)
-# ---------------------------------------------------------------------------
-# Chosen values:
-#   - max_depth = 12, min_samples_leaf = 5, min_samples_split = 10.
-#   - feature selection: variance-based top-k filtering on the training split,
-#     keeping max(8, ceil(0.6 * n_features)) features, identical to Python.
-#   - n_trees = 60: aligned with the optimized Python implementation (Variant E),
-#     reducing tree building cost by 40% while preserving ensemble diversity,
-#     variance reduction, and high MCC performance.
-#   - parallel execution: native Julia multi-threading (Threads.@threads) over
-#     the 100 hold-out splits in a single shared memory process.
-# ---------------------------------------------------------------------------
 const MODEL_N_TREES = 60
 const MAX_DEPTH = 12
 const MIN_SAMPLES_LEAF = 5

@@ -1,9 +1,5 @@
 pandas
 numpy
 scikit-learn
-# codecarbon installed from windows_support branch for accurate Windows CPU measurement via EMI (PR #1263):
-# pip install git+https://github.com/mlco2/codecarbon.git@windows_support
-# (standard 'pip install codecarbon' v3.2.8 uses CPU-load estimation on Windows -- inaccurate for multiprocessing workloads)
-codecarbon
-# lightgbm
-# xgboost
+# Windows EMI build for accurate CPU measurement (PR #1263). Standard PyPI v3.2.8 falls back to TDP x cpu_load estimation on Windows.
+codecarbon @ git+https://github.com/mlco2/codecarbon.git@windows_support

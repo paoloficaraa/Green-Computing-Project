@@ -87,6 +87,9 @@ Pure Julia implementation (no PythonCall bridge):
 - `Threads.@threads` for native shared-memory parallel execution across 100 splits
 - Launched with `julia -t auto` to use all cores
 - CodeCarbon **external** tracking via `run_script3.py`
+
+> **Threading fairness note:** Python (`script2.py`) is intentionally single-threaded (`n_jobs=1`) because joblib IPC costs more than it saves on these small tables, while Julia (`script3.jl`) uses `Threads.@threads` shared-memory parallelism across splits. The Julia-vs-Python gap therefore mixes language/runtime efficiency with threading strategy — it compares the best energy practice per runtime at system level (both under EMI hardware counters), not a pure single-thread language effect.
+
 ## Measurement Methodology (Key Learning)
 
 This section documents the most important technical discovery of this project: **how CodeCarbon measures energy on Windows, and why the default method is unreliable for multiprocessing workloads.**
@@ -274,7 +277,7 @@ Five bio/health informatics datasets from peer-reviewed open-access publications
 | Dataset | File | Target | Rows | Features |
 | --- | --- | --- | --- | --- |
 | Neuroblastoma (YM2018) | `10_7717_peerj_5665_dataYM2018_neuroblastoma.csv` | Binary | ~500–1000 | ~6–12 |
-| Pediatric Brain Tumor (Belgrade 2021) | `dataset_Belgrade2021_pediatric_brain_tumor_...` | Multiclass | ~300–600 | ~8–16 |
+| Pediatric Brain Tumor (Belgrade 2021) | `dataset_Belgrade2021_pediatric_brain_tumor_...` | Binary | ~300–600 | ~8–16 |
 | Colorectal Cancer EHRs (Taipei 2018) | `dataset_Taipei2018_colorectal_cancer_EHRs_...` | Binary | ~1000–2000 | ~10–20 |
 | Sepsis/SIRS | `journal.pone.0148699_S1_Text_Sepsis_SIRS_EDITED.csv` | Binary | ~500–1000 | ~6–12 |
 | Depression/Heart Failure | `journal.pone.0158570_S2File_depression_heart_failure.csv` | Binary | ~500–1000 | ~8–15 |
@@ -330,7 +333,10 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install git+https://github.com/mlco2/codecarbon.git@windows_support
 pip install pandas numpy scikit-learn
+
 ```
+
+Or simply `pip install -r requirements.txt` — it already pins the EMI build (`codecarbon @ git+https://github.com/mlco2/codecarbon.git@windows_support`).
 
 **Verification:** Run a quick test, then check the emissions CSV. The `cpu_power` column should show realistic values (~30–90 W depending on workload), and in the CodeCarbon console output you should see:
 

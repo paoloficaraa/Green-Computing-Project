@@ -6,28 +6,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import matthews_corrcoef
 from codecarbon import EmissionsTracker
 
-# ---------------------------------------------------------------------------
-# Optimized Random Forest configuration for script2.py (Variant E)
-# ---------------------------------------------------------------------------
-# Chosen values:
-#   - n_estimators = 60: achieves a direct 40% reduction in tree construction
-#     workload while preserving strong ensemble diversity and variance reduction,
-#     avoiding the predictive collapse on smaller datasets caused by aggressive
-#     row subsampling.
-#   - max_depth = 12: keeps trees shallow enough to prevent unnecessary deep
-#     branching on larger datasets while retaining sufficient capacity for
-#     biomedical classification.
-#   - min_samples_leaf = 5 and min_samples_split = 10: regularize each tree and
-#     prune fine-grained split evaluations, lowering node construction cost.
-#   - feature selection: variance-based top-k selection on the training split,
-#     keeping max(8, ceil(0.6 * n_features)) features. This is applied identically
-#     in both Python and Julia to lighten computation and maintain reproducibility.
-#   - single-threaded execution (n_jobs=1): eliminates joblib multiprocessing
-#     IPC and thread synchronization overhead, which otherwise wastes CPU package
-#     energy on tiny biomedical datasets (100-1000 samples).
-#   - no row subsampling: preserves the full training distribution, protecting
-#     clinical MCC performance across unbalanced biomedical datasets (e.g. Sepsis).
-# ---------------------------------------------------------------------------
 N_ESTIMATORS = 60
 MAX_DEPTH = 12
 MIN_SAMPLES_LEAF = 5
