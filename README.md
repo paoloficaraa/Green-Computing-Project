@@ -22,8 +22,8 @@ Comparative analysis of energy consumption for Random Forest classification acro
   - [External vs. Internal Tracking](#external-vs-internal-tracking)
 - [Results](#results)
   - [Final Comparison Table](#final-comparison-table)
+  - [Ablation Study](#ablation-study-one-factor-hardware-matched)
   - [Visual Comparison of CPU Power Readings](#visual-comparison-of-cpu-power-readings)
-- [Datasets](#datasets)
 - [Project Structure](#project-structure)
 - [How to Reproduce](#how-to-reproduce)
   - [Prerequisites](#prerequisites)
@@ -38,11 +38,11 @@ Comparative analysis of energy consumption for Random Forest classification acro
 
 ## Project Overview
 
-This project compares the energy consumption and CO₂ emissions of three implementations of the same machine learning task (Random Forest classification on 5 bio/health informatics datasets) using **CodeCarbon** for measurement. The core research question:
+This project compares the energy consumption and CO₂ emissions of three implementations of the same machine learning task (Random Forest classification on 5 bio/health informatics datasets) using **CodeCarbon** for measurement. Random Forest is the deliberate model family: CPU-native, embarrassingly parallel, and competitive on small tabular EHR data with no GPU in the loop — so every saving comes from configuration, never from new hardware. The core research question:
 
 > **How much energy can be saved while preserving model quality by targeting the computational cost inside each tree and forest sizing, rather than by relying on aggressive row subsampling?**
 
-The final strategy combines 60 regularized trees (`n_estimators=60`, `max_depth=12`, `min_samples_leaf=5`, `min_samples_split=10`), variance-based feature selection (top 60%, floor 8), and single-threaded Python execution (eliminating joblib multiprocessing overhead on small tabular datasets). This achieves a **42.88% energy reduction in Python** and **47.07% in Julia** while preserving an average MCC of **0.595 / 0.590** (against 0.599 baseline).
+The final strategy combines 60 regularized trees (`n_estimators=60`, `max_depth=12`, `min_samples_leaf=5`, `min_samples_split=10`), variance-based feature selection (top 60%, floor 8), and single-threaded Python execution (eliminating joblib multiprocessing overhead on small tabular datasets). This achieves a **42.2% energy reduction in Python** and **47.1% in Julia** while preserving an average MCC of **0.5946 / 0.5904** (against 0.5990 baseline).
 
 Each experiment runs 100 stratified train/test splits on each of 5 datasets, and measures:
 
@@ -242,17 +242,32 @@ This is the cleanest approach for measuring non-Python code — the Julia proces
 | Script | Duration (s) | Energy (Wh) | CO₂ (g) | Avg MCC | Energy Reduction | Time Reduction |
 | --- | --- | --- | --- | --- | --- | --- |
 | **Baseline Python** | 73.22 s | 1.738 Wh | 0.575 g | 0.5990 | — | — |
-| **Optimized Python** | 43.41 s | 0.993 Wh | 0.328 g | 0.5946 | **−42.88%** | **−40.71%** |
+| **Optimized Python** | 42.79 s | 1.005 Wh | 0.332 g | 0.5946 | **−42.18%** | **−41.56%** |
 | **Julia Native** | 30.89 s | 0.920 Wh | 0.304 g | 0.5904 | **−47.07%** | **−57.81%** |
 
 ### Key Takeaways
 
 | Conclusion | Detail |
 | --- | --- |
-| **Variant E delivers superior balance** | Combining 60 regularized trees, 60% feature selection, and single-threaded Python cuts energy by **42.9%** while preserving **99.3% of baseline MCC** (0.5946 vs 0.5990). |
+| **Variant E delivers superior balance** | Combining 60 regularized trees, 60% feature selection, and single-threaded Python cuts energy by **42.2%** while preserving **99.3% of baseline MCC** (0.5946 vs 0.5990). |
 | **Row subsampling avoided** | Empirical testing showed 50% row subsampling causes severe MCC degradation on imbalanced biomedical data (e.g. Sepsis MCC drops from 0.43 to 0.35). |
 | **Julia is the most efficient** | Completes in **30.89 s** (−57.8% duration) and uses **0.920 Wh** (−47.1% energy) with native threading. |
 | **Measurement fidelity** | With Windows EMI hardware counters, accurate RAPL energy readings are captured across Python and Julia without process-visibility blind spots. |
+
+### Ablation Study (One-Factor, Hardware-Matched)
+
+`run_ablation.py` isolates each optimization lever by changing one setting at a time relative to baseline (same 5 datasets × 100 splits, single-threaded Python, same i7-9700K + EMI protocol as the headline benchmark):
+
+| Variant | Changed lever | Energy (Wh) | Δ vs baseline | Mean MCC |
+| --- | --- | --- | --- | --- |
+| Depth-only | `max_depth=12` | 1.824 Wh | +4.9% (neutral) | 0.5966 |
+| Filter-only | top-60% variance features | 1.990 Wh | +14.5% (costs energy) | 0.5690 |
+| Trees-only | `n_estimators=60` | 1.060 Wh | **−39.0%** | 0.5944 |
+
+**Reading:** ensemble sizing is the dominant saver (−39.0% alone, ≈ the full −42.2% combined saving). Depth capping alone is energy-neutral (few trees reach depth 12 on these small tables); variance filtering alone costs energy (pre-pass overhead) and quality (sepsis MCC drops to 0.418 — rare acute signals get discarded). The remaining ~3 pp of saving and the MCC recovery (0.5690 → 0.5946) come from lever interaction plus the tightened leaf/split minima.
+
+**Tuning-energy payback:** the three ablation runs cost 1.824 + 1.990 + 1.060 = 4.874 Wh one-time; the deployed config saves 0.733 Wh per 500-fit campaign, so tuning amortizes in ≈ 6.6 campaigns — within the first night of network-wide nightly retraining. Raw data: `CodeCarbon reports/emissions_ablation_*.csv`, `mcc reports/mcc_report_ablation_*.csv`.
+
 ### Visual Comparison of CPU Power Readings
 
 ```text
@@ -301,7 +316,13 @@ Each dataset has the target variable in the **last column**.
 │   ├── Project.toml                           # Julia dependencies (DecisionTree, MLJ, etc.)
 │   ├── script3.jl                             # Julia native script (Threads.@threads)
 │   └── run_script3.py                         # External CodeCarbon orchestrator
+├── run_ablation.py                            # One-factor ablation (depth/filter/trees variants)
 ├── compare_reports.py                         # Aggregate results → comparison.csv
+├── generate_plots.py                          # Publication figures (duration/energy, MCC, Pareto)
+├── project.tex                                # Full report (benchmark + ablation + extrapolation)
+├── duration_energy_comparison.png             # Generated: per-cohort runtime/energy bars
+├── mcc_comparison.png                         # Generated: per-cohort MCC bars
+├── pareto_frontier.png                        # Generated: energy vs MCC frontier
 ├── requirements.txt                           # Python dependencies (see EMI note)
 ├── LICENSE                                    # MIT license
 ├── CodeCarbon reports/                        # Auto-generated: emissions CSV from CodeCarbon
@@ -366,17 +387,21 @@ julia --project=script3 -e 'using Pkg; Pkg.add(["CSV", "DataFrames", "MLJ", "MLJ
 python script1.py                # Baseline (≈1.2 min)
 python script2.py                # Optimized (≈0.8 min)
 python script3/run_script3.py    # Julia (≈0.6 min)
+python run_ablation.py           # One-factor ablation, 3 variants (≈3.5 min)
 ```
 
 ### Generate Comparison
 
 ```bash
-python compare_reports.py
+python compare_reports.py        # headline benchmark table
+python generate_plots.py         # duration/energy, MCC, Pareto figures
 ```
 
 Outputs:
 
 - `comparison reports/comparison.csv` — numeric summary table with percentage reductions
+- `duration_energy_comparison.png`, `mcc_comparison.png`, `pareto_frontier.png` — report figures
+- `CodeCarbon reports/emissions_ablation_*.csv` + `mcc reports/mcc_report_ablation_*.csv` — raw ablation data
 
 ---
 
