@@ -319,10 +319,6 @@ Each dataset has the target variable in the **last column**.
 ├── run_ablation.py                            # One-factor ablation (depth/filter/trees variants)
 ├── compare_reports.py                         # Aggregate results → comparison.csv
 ├── generate_plots.py                          # Publication figures (duration/energy, MCC, Pareto)
-├── project.tex                                # Full report (benchmark + ablation + extrapolation)
-├── duration_energy_comparison.png             # Generated: per-cohort runtime/energy bars
-├── mcc_comparison.png                         # Generated: per-cohort MCC bars
-├── pareto_frontier.png                        # Generated: energy vs MCC frontier
 ├── requirements.txt                           # Python dependencies (see EMI note)
 ├── LICENSE                                    # MIT license
 ├── CodeCarbon reports/                        # Auto-generated: emissions CSV from CodeCarbon
