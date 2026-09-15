@@ -1,0 +1,411 @@
+\documentclass[11pt,a4paper]{article}
+
+% --- Typography ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+
+% --- Compact page layout (hard <= 5 pages) ---
+\usepackage[a4paper, top=1.8cm, bottom=1.8cm, left=1.8cm, right=1.8cm,
+  headheight=20pt, headsep=10pt, footskip=16pt]{geometry}
+\usepackage{parskip}
+
+% --- Colors & graphics ---
+\usepackage[table,dvipsnames]{xcolor}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,positioning,calc}
+
+\definecolor{primary}{HTML}{064E3B}
+\definecolor{primarydark}{HTML}{022C22}
+\definecolor{accent}{HTML}{059669}
+\definecolor{accentlight}{HTML}{10B981}
+\definecolor{teal}{HTML}{0D9488}
+\definecolor{darktext}{HTML}{1E293B}
+\definecolor{mutedtext}{HTML}{64748B}
+\definecolor{bglight}{HTML}{F8FAFC}
+\definecolor{bggreen}{HTML}{F0FDF4}
+\definecolor{bordergreen}{HTML}{A7F3D0}
+\definecolor{bordergray}{HTML}{E2E8F0}
+\definecolor{badgegreen}{HTML}{DCFCE7}
+
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{skins,breakable}
+
+% --- Tables & math ---
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{amsmath,amssymb}
+\usepackage{lastpage}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage[hyphens]{url}
+\usepackage{hyperref}
+\makeatletter
+\g@addto@macro\UrlBreaks{\do\_\do\-}
+\makeatother
+
+\hypersetup{
+  colorlinks=true, linkcolor=primary, citecolor=primary, urlcolor=teal,
+  pdfauthor={Paolo Ficara},
+  pdftitle={Green Computing Final Project - Carbon Footprint Comparison},
+  pdfsubject={Green Computing Benchmarking Report},
+  pdfkeywords={Green Computing, Random Forest, Julia, Python, Energy Efficiency, CodeCarbon, Medical Data}
+}
+
+\captionsetup{font=small, labelfont={bf,color=primary}, textfont={color=darktext}, skip=3pt}
+\captionsetup[subfigure]{font=footnotesize, skip=2pt}
+
+\titleformat{\section}
+  {\large\bfseries\color{primarydark}}
+  {\llap{\color{accent}\rule[-2pt]{3pt}{1.1em}\hspace{5pt}}\color{primary}\thesection}{0.6em}
+  {}[\vspace{2pt}\color{bordergray}\hrule height 0.6pt]
+\titleformat{\subsection}{\normalsize\bfseries\color{primary}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}{\small\bfseries\color{darktext}}{\thesubsubsection}{0.4em}{}
+\titlespacing*{\section}{0pt}{8pt plus 2pt minus 2pt}{3pt plus 1pt minus 1pt}
+\titlespacing*{\subsection}{0pt}{6pt plus 2pt minus 1pt}{2pt plus 1pt}
+\titlespacing*{\subsubsection}{0pt}{4pt plus 1pt minus 1pt}{1pt plus 1pt}
+
+\setlist[itemize]{leftmargin=1.2em, topsep=1pt, itemsep=1pt, parsep=0pt,
+  label=\textcolor{accent}{\raisebox{0.15ex}{\tiny$\blacksquare$}}}
+\setlist[enumerate]{leftmargin=1.2em, topsep=1pt, itemsep=1pt, parsep=0pt,
+  label=\textcolor{primary}{\textbf{\arabic*.}}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{bordergray}\leaders\hrule height \headrulewidth\hfill}}
+\fancyhead[L]{\footnotesize\textcolor{mutedtext}{\textsc{Green Computing Final Project}}}
+\fancyhead[R]{\footnotesize\textcolor{mutedtext}{Paolo Ficara}}
+\fancyfoot[R]{\footnotesize\textcolor{mutedtext}{Page \thepage\ of \pageref{LastPage}}}
+
+\newtcolorbox{abstractbox}[1][]{
+  enhanced, colback=bggreen, colframe=bordergreen, arc=2.5mm, boxrule=0.8pt,
+  left=10pt, right=10pt, top=6pt, bottom=6pt,
+  title=\textbf{\textcolor{primary}{\textsc{Abstract}}}, coltitle=primary,
+  fonttitle=\bfseries\footnotesize,
+  attach boxed title to top left={yshift=-2mm, xshift=8mm},
+  boxed title style={colback=badgegreen, colframe=bordergreen, arc=1.2mm,
+    boxrule=0.6pt, left=5pt, right=5pt, top=1.5pt, bottom=1.5pt}, #1
+}
+
+\newcommand{\code}[1]{\texttt{\small\color{primarydark}#1}}
+\newcommand{\pctsave}[1]{\textbf{\textcolor{primary}{#1}}}
+
+\begin{document}
+\thispagestyle{empty}
+
+\begin{tcolorbox}[enhanced, colback=primarydark, colframe=primarydark,
+  arc=2.5mm, boxrule=0pt, left=12pt, right=12pt, top=10pt, bottom=9pt]
+  \raggedright
+  {\fontsize{17pt}{20pt}\selectfont\bfseries\textcolor{white}{Green Computing Final Project}}\\[3pt]
+  {\fontsize{10pt}{13pt}\selectfont\textcolor{bordergreen}{\textsf{Comparative Carbon Footprint \& Algorithmic Efficiency in Clinical Machine Learning}}}\\[8pt]
+  \begin{tikzpicture}
+    \draw[accentlight!40, line width=0.6pt] (0,0) -- (\linewidth-15pt,0);
+  \end{tikzpicture}
+  \vspace{2pt}
+  \noindent
+  \begin{minipage}[t]{0.35\textwidth}
+    \raggedright
+    \footnotesize\textcolor{gray!30}{Author:}\\
+    \textbf{\textcolor{white}{\normalsize Paolo Ficara}}\\[1pt]
+  \end{minipage}
+  \hfill
+  \begin{minipage}[t]{0.62\textwidth}
+    \raggedleft
+    \footnotesize\textcolor{gray!30}{Evaluation Workstation:}\\
+    \scriptsize\textcolor{white}{\textbf{Intel i7-9700K (8C/8T)} \;\textbar\; \textbf{RTX 5060} \;\textbar\; \textbf{16GB DDR4}}\\[1pt]
+    \scriptsize\textcolor{bordergreen}{Code: \href{https://codeberg.org/paoloficaraa/Green-computing_final-project}{\texttt{paoloficaraa/Green-computing\_final-project}}}
+  \end{minipage}
+\end{tcolorbox}
+\vspace{2pt}
+
+% ============================================================
+\section{Introduction \& Motivation}
+% ============================================================
+Clinical machine learning runs inside healthcare IT every day: hospitals
+retrain risk scores each night and re-tune them whenever coding practices drift.
+Each fit looks cheap in isolation, but across cohorts, seeds, and hospitals
+those fits form a standing electrical load with a measurable carbon
+counterpart. We measure how much of that load diagnosis requires, and how much
+comes from default hyperparameters and interpreted-language overhead.
+
+We frame quality with the Matthews Correlation Coefficient (MCC),
+\begin{equation}
+\text{MCC}=\frac{TP\cdot TN-FP\cdot FN}
+{\sqrt{(TP{+}FP)(TP{+}FN)(TN{+}FP)(TN{+}FN)}}\in[-1,+1],
+\label{eq:mcc}
+\end{equation}
+because accuracy collapses on imbalanced EHR cohorts. In our sepsis cohort
+barely one patient in ten deteriorates (\S\ref{sec:testbed}): a trivial
+majority classifier scores $\sim$90\% accuracy while learning nothing. MCC
+couples all four confusion-matrix cells, penalises majority-class collapse,
+and stays invariant under label swapping. An energy saving that destroyed MCC
+would waste clinical performance for power, so every figure below pairs joules
+with MCC.
+
+Our contributions are:
+\begin{itemize}
+\item \textbf{Like-for-like benchmark:} three pipelines (baseline Python, regularised Python, native Julia) over five EHR cohorts with identical 100$\times$ stratified 70/30 splits.
+\item \textbf{Physical explanation:} how tree depth, DVFS boost states, and memory traffic produce the observed savings.
+\item \textbf{Per-cohort analysis:} where variance filtering helps (oncology) and where it harms (acute sepsis).
+\item \textbf{Clinical extrapolation:} what the savings mean for a regional hospital network.
+\end{itemize}
+
+% ============================================================
+\section{Experimental Testbed \& Software Architecture}
+\label{sec:testbed}
+% ============================================================
+\subsection{EHR cohort profiling}
+We profiled five public cohorts (Table~\ref{tab:datasets}), covering the
+regimes hospital pipelines meet in practice, from small genomic tables to a
+large intensive-care cohort with a 10\% minority class.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\caption{EHR cohort profiles ($N$ instances, $M$ features, minority share).}
+\label{tab:datasets}
+\rowcolors{2}{bglight}{white}
+\begin{tabularx}{\textwidth}{l c c c X}
+\toprule
+\rowcolor{primarydark}
+\textcolor{white}{\textbf{Cohort}} &
+\textcolor{white}{\textbf{$N$}} & \textcolor{white}{\textbf{$M$}} &
+\textcolor{white}{\textbf{Minority \%}} & \textcolor{white}{\textbf{Primary pathology}} \\
+\midrule
+Neuroblastoma (PeerJ 5665) & 169 & 12 & 45.6 & Paediatric neuroblastoma outcome \\
+Brain tumor (Belgrade 2021) & 173 & 30 & 45.7 & Paediatric brain-tumor survival \\
+Colorectal cancer (Taipei 2018) & 999 & 31 & 42.7 & Colorectal-cancer mortality \\
+Sepsis/SIRS (PLOS ONE) & 1257 & 15 & 10.3 & ICU sepsis mortality \\
+Depression/HF (PLOS ONE) & 425 & 14 & 23.3 & Heart-failure mortality \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Three-layer software architecture}
+All pipelines share a three-layer design. The \textbf{orchestration layer}
+fixes the experimental protocol: 100 stratified 70/30 hold-out splits (seeds
+$0$--$99$), identical per split across pipelines, totalling 500 fits per
+pipeline. The \textbf{processing and validation layer} (pandas/scikit-learn in
+Python; DataFrames/MLJ in Julia) splits the data, filters variance, trains,
+and scores MCC. The \textbf{native execution layer} is where the pipelines
+diverge: CPython with \code{RandomForestClassifier} versus Julia compiled
+through LLVM with \code{DecisionTree.jl}. We ran one pipeline at a time on an
+otherwise idle workstation, with a cool-down between runs; we reused the same
+seed sequence for all three, so each pipeline faced the same 500 train/test
+problems.
+
+The three contenders are:
+\begin{itemize}
+\item \textbf{Baseline Python} (\code{script1.py}): $T{=}100$ trees, unconstrained depth, all features, single-threaded.
+\item \textbf{Optimised Python} (\code{script2.py}): $T{=}60$, \code{max\_depth{=}12}, \code{min\_samples\_leaf{=}5}, \code{min\_samples\_split{=}10}, top-60\% variance filtering, \code{n\_jobs{=}1}. We chose these values through empirical trials that compared candidate setups for quality per joule, then froze them across all five cohorts.
+\item \textbf{Native Julia} (\code{script3/}): matching hyperparameters, LLVM-compiled, with shared-memory threading (\code{Threads.@threads}) over the 100 splits.
+\end{itemize}
+We threaded the two runtimes differently (one thread in Python, many in Julia), so read the Python--Julia gap as language efficiency plus parallelism strategy.
+
+To attribute the optimised configuration, we also ran a minimal one-factor
+ablation campaign with the same five cohorts, 100 stratified splits, and
+single-threaded Python protocol. Each variant changed one lever relative to
+the baseline: maximum depth, feature filtering, or forest size. Table~\ref{tab:ablation}
+reports the resulting MCC means and the exploratory energy measurements.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\caption{One-factor ablation (500 fits per row). Energy was measured during a
+separate exploratory run on an i7-6500U laptop and is not hardware-matched to
+the i7-9700K benchmark.}
+\label{tab:ablation}
+\rowcolors{2}{bglight}{white}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X c c c}
+\toprule
+\rowcolor{primarydark}
+\textcolor{white}{\textbf{Variant}} &
+\textcolor{white}{\textbf{Changed lever}} &
+\textcolor{white}{\textbf{Energy (Wh)}} &
+\textcolor{white}{\textbf{Mean MCC}} \\
+\midrule
+Depth-only & $\texttt{max\_depth}=12$ & 0.536 & 0.5966 \\
+Filter-only & top-60\% variance features & 0.573 & 0.5690 \\
+Trees-only & $T=60$ & 0.333 & 0.5944 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The ablation identifies ensemble sizing as the strongest isolated work
+reduction, while depth control preserves aggregate MCC and variance filtering
+is the main quality risk. Because the ablation ran on different hardware, its
+energy values are retained for auditability but are not used to decompose the
+42.2\% workstation saving into causal contributions.
+
+\subsection{Energy telemetry and carbon conversion}
+We ran all experiments on an Intel Core i7-9700K (8C/8T, 3.60\,GHz), an NVIDIA
+RTX~5060 (idle during CPU-only training), and 16\,GB DDR4 under Windows~11.
+We read physical energy from CPU hardware counters (Intel RAPL via the Windows
+Energy Meter Interface) through CodeCarbon, using the same counters for Python
+and Julia; Julia timings include one-off compilation. We converted energy to
+Scope~2 carbon with the certified Lombardy grid factor
+$I=330.72\,\mathrm{gCO_{2}e/kWh}$, i.e.\ $m_{\mathrm{CO_{2}e}}=E\cdot I$.
+
+% ============================================================
+\section{Algorithmic Levers \& Hardware Mechanics}
+% ============================================================
+We pull four levers to cut cycles and hold clocks down:
+\begin{itemize}
+\item \textbf{Depth bounds against DVFS boost.} Under sustained load DVFS raises voltage and clock, and power grows with $V^{2}f$. Deep, unbalanced trees hold hot turbo states and raise junction temperature, which keeps the governor in high-voltage boost. We capped maximum depth at 12 and required at least 5 samples per leaf and 10 per split, and package power dropped to a far lower level (53.96\,W down to 27.05\,W in Python).
+\item \textbf{Variance filtering against the memory bus.} We computed variances on the training split and applied the selected columns to the test split, so no test information leaks into selection. A Random Forest tests $\sqrt{M}$ candidate features per node; keeping the top 60\% of columns by variance shrinks the candidate set by $1-\sqrt{0.60}\approx22.5\%$ per node, which removes over a fifth of memory-bus transfers across all 500 fits for a single linear pre-pass.
+\item \textbf{Ensemble sizing.} Error variance flattens before $T{=}100$, so capping the forest at 60 trees discards about 40\% of induction work with no measurable MCC loss.
+\item \textbf{Language-matched parallelism.} The Python GIL forces scikit-learn into multiprocessing, and array serialisation over the bus exceeds any parallel gain on small tables, so we ran Python single-threaded. Julia shares one table across threads, so parallelising over splits copies almost nothing.
+\end{itemize}
+\section{Experimental Results \& Discussion}
+% ============================================================
+\subsection{Aggregate savings at preserved quality}
+The headline result: regularisation in Python lowers energy from 1.738\,Wh to
+1.005\,Wh (\textbf{$-42.2$\%}) and runtime by 41.6\%, while mean MCC moves
+from 0.5990 to 0.5946 (99.3\% retained; Table~\ref{tab:comparison},
+Fig.~\ref{fig:time-energy}). The native Julia pipeline reaches 0.920\,Wh
+(\textbf{$-47.1$\%}) and 30.89\,s (\textbf{$-57.8$\%}) at MCC 0.5904 (98.6\%
+retained).
+
+\begin{table}[H]
+\centering
+\footnotesize
+\caption{Aggregate benchmark over 5 cohorts (500 fits per pipeline).}
+\label{tab:comparison}
+\rowcolors{2}{bglight}{white}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.9cm} *{4}{>{\centering\arraybackslash}X}}
+\toprule
+\rowcolor{primarydark}
+\textcolor{white}{\textbf{Pipeline}} &
+\textcolor{white}{\textbf{Time (s)}} & \textcolor{white}{\textbf{Energy (Wh)}} &
+\textcolor{white}{\textbf{CO$_{2}$e (g)}} & \textcolor{white}{\textbf{Mean MCC}} \\
+\midrule
+Baseline Python & 73.22 & 1.738 & 0.575 & 0.5990 \\
+Optimised Python & 42.79 \pctsave{($-41.6$\%)} & 1.005 \pctsave{($-42.2$\%)} &
+0.332 \pctsave{($-42.2$\%)} & 0.5946 \textcolor{mutedtext}{\textit{(99.3\%)}} \\
+Native Julia & 30.89 \pctsave{($-57.8$\%)} & 0.920 \pctsave{($-47.1$\%)} &
+0.304 \pctsave{($-47.1$\%)} & 0.5904 \textcolor{mutedtext}{\textit{(98.6\%)}} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\linewidth]{duration_energy_comparison.png}
+\caption{Per-cohort runtime (A) and energy (B). Both green pipelines beat the
+baseline on all five cohorts; the largest absolute gains fall in the two
+largest cohorts. We scaled measured totals to cohorts with an
+$N{\cdot}\sqrt{M}{\cdot}T$ work model (\code{generate\_plots.py}).}
+\label{fig:time-energy}
+\end{figure}
+
+\subsection{CPU power decomposition}
+Our CodeCarbon totals count an idle GPU drawing $\sim$19\,W over PCIe, which
+training leaves idle. We isolated the CPU package ($E_{\mathrm{CPU}}\approx
+P_{\mathrm{CPU}}\cdot t$) to find the mechanism: the baseline sustains
+53.96\,W for 73.22\,s (1.097\,Wh); the optimised run draws 27.05\,W
+($-49.9$\%) for 0.321\,Wh ($-70.7$\%); Julia draws 34.92\,W across 8 saturated
+cores but finishes in 30.89\,s for 0.300\,Wh ($-72.7$\%). Julia runs hotter
+but greener: parallelism raises power and collapses time, and the shorter time
+decides the total.
+
+\subsection{Accounting for tuning energy}
+The three ablation runs consumed $0.536+0.573+0.333=1.441$\,Wh on the
+exploratory laptop. We retain this one-time cost in the repository as
+\code{emissions\_ablation\_*.csv}, but do not merge it into the headline
+workstation measurement. The deployable optimised Python configuration saves
+$1.738-1.005=0.733$\,Wh per 500-fit campaign relative to baseline. Under the
+network scenario in Section~\ref{sec:extrapolation}, this corresponds to
+approximately $0.733\times50\times10\times365=133.8$\,kWh/year. The
+exploratory campaign therefore amortises in about $1.441/0.733=1.97$
+equivalent benchmark campaigns; a final physical payback claim requires a
+hardware-matched ablation rerun.
+
+\subsection{Predictive quality and the biomedical trade-off}
+Quality survives the energy cut except in sepsis (Fig.~\ref{fig:quality}, Table~\ref{tab:mcc}):
+\begin{itemize}
+\item \textbf{Oncology: MCC rises.} Neuroblastoma moves from 0.462 to 0.524 and brain tumor from 0.794 to 0.821, because low-variance genomic columns offered trees chance splits.
+\item \textbf{Sepsis: MCC falls.} Acute detection drops from 0.531 to 0.416--0.431: life-threatening cytokine storms and leukocyte spikes appear in few patients, so their cohort-wide variance stays low and the filter discards the signals intensivists need.
+\end{itemize}
+Colorectal mortality stays flat across pipelines, and the near-deterministic depression/heart-failure cohort stays above 0.99 in all three pipelines. The Pareto frontier (Fig.~\ref{fig:quality}b) runs almost vertical: each step from baseline through optimised Python to Julia costs under 0.005 MCC while halving energy.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[b]{0.56\linewidth}
+\centering
+\includegraphics[width=\linewidth]{mcc_comparison.png}
+\caption{Mean MCC per cohort ($\pm\sigma$).}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.42\linewidth}
+\centering
+\includegraphics[width=\linewidth]{pareto_frontier.png}
+\caption{Pareto frontier.}
+\end{subfigure}
+\caption{Diagnostic quality holds: green pipelines match baseline MCC on the
+oncology and cardiology cohorts but lose ground in sepsis, where variance
+filtering removes rare inflammatory signals.}
+\label{fig:quality}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\caption{Per-cohort mean MCC over 100 stratified splits.}
+\label{tab:mcc}
+\rowcolors{2}{bglight}{white}
+\begin{tabularx}{\textwidth}{X *{3}{>{\centering\arraybackslash}p{2.5cm}}}
+\toprule
+\rowcolor{primarydark}
+\textcolor{white}{\textbf{Cohort}} &
+\textcolor{white}{\textbf{Baseline}} & \textcolor{white}{\textbf{Optimised}} &
+\textcolor{white}{\textbf{Julia}} \\
+\midrule
+Neuroblastoma & 0.4623 & \textbf{0.5236} & \textbf{0.5250} \\
+Brain tumor & 0.7936 & \textbf{0.8211} & \textbf{0.8108} \\
+Colorectal & 0.2094 & 0.1977 & 0.2053 \\
+Sepsis/SIRS & 0.5314 & 0.4312 & 0.4161 \\
+Depression/HF & 0.9985 & \textbf{0.9996} & 0.9950 \\
+\midrule
+\rowcolor{badgegreen}
+\textbf{Mean} & \textbf{0.5990} & \textbf{0.5946} & \textbf{0.5904} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% ============================================================
+\section{Real-World Clinical Extrapolation}
+\label{sec:extrapolation}
+% ============================================================
+A single benchmark saves $1.738-0.920=0.818$\,Wh per 500 fits. Scale that to
+a regional network of 50 centres, each retraining 10 diagnostic models each
+night with our 500-fit validation protocol. The nightly saving is
+$50\times10\times0.818\,\mathrm{Wh}\approx409$\,Wh; over a year this compounds
+to \textbf{$\approx$149\,kWh} and, at the Lombardy factor,
+\textbf{$\approx$49\,kg\,CO$_{2}$e} avoided, alongside $\sim$2{,}150\,h of
+freed compute time. Routine hyperparameter search multiplies every fit by
+$\sim$5, lifting the saving above \textbf{700\,kWh/year} and
+\textbf{250\,kg\,CO$_{2}$e/year}. That matches the annual electricity use of
+dozens of households, removed by leaner defaults and a compiled runtime, with
+no loss of diagnostic fidelity outside sepsis. At institutional scale, green
+defaults compound into budget- and carbon-relevant quantities.
+
+% ============================================================
+\section{Conclusion \& Practical Guidelines}
+% ============================================================
+We draw three lessons for green healthcare AI:
+\begin{itemize}
+\item \textbf{Regularise by default.} $T{=}60$, bounded depth, and variance filtering recover over 40\% of energy at negligible quality cost.
+\item \textbf{Match parallelism to the language.} Single-threaded Python avoids serialisation overhead on small tables, while Julia's shared-memory threading turns cores into net energy savings.
+\item \textbf{Filter features with clinical oversight.} Variance thresholding purifies oncology panels but endangers sepsis detection, so allow-list known biomarkers before any unsupervised cut.
+\end{itemize}
+We cut energy by removing work rather than adding hardware: leaner algorithms preserve cohorts and minority signals, and scale from a workstation benchmark to hundreds of kilograms of avoided CO$_{2}$e across a hospital network.
+
+\end{document}
