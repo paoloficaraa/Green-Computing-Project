@@ -60,9 +60,9 @@ COLORS = [BASELINE, OPTIMIZED, JULIA]
 
 # ------------------------------------------------------- measured ground truth
 # comparison reports/comparison.csv (latest runs)
-AGG_DURATION = np.array([73.21827930000018, 42.78598629999942, 30.89168520000021])
-AGG_ENERGY = np.array([1.7384825751106652, 1.005123811522785, 0.9202635873759931])
-AGG_MCC = np.array([0.5990341639734972, 0.5946400566118308, 0.5904423679066387])
+AGG_DURATION = np.array([72.45120006666669, 45.687757666666585, 33.30872656666664])
+AGG_ENERGY = np.array([1.8449492273394474, 1.225873011656712, 1.005228755109856])
+AGG_MCC = np.array([0.46875886858136273, 0.4539122248145187, 0.4574449322442995])
 
 # mcc reports/mcc_report_script{1,2,3}.csv (mean over 100 stratified splits)
 COHORTS = ["Neuroblastoma", "Brain tumor", "Colorectal", "Sepsis / SIRS", "Depression / HF"]
@@ -71,25 +71,26 @@ MCC = np.array(
     [
         [0.4623458794336433, 0.5236413814503882, 0.5250388280195003],
         [0.7935503002268365, 0.8210598582345243, 0.8108102248704324],
-        [0.20943989759877055, 0.19771394118479418, 0.20525702694744727],
-        [0.5313597723722322, 0.43122082497916076, 0.4161194797298306],
-        [0.9984749702360034, 0.9995642772102866, 0.9949862799659833],
+        [0.2094398975987705, 0.1977139411847941, 0.2052570269474472],
+        [0.5313597723722322, 0.4312208249791607, 0.4161194797298306],
+        [0.347098493275331, 0.295925118223726, 0.329999101654287],
     ]
 )
-# Illustrative within-cohort std across the 100 splits (see docstring).
+# Measured within-cohort std across the 100 splits (Python configs re-measured;
+# Julia column from a dedicated std-logging run with identical protocol).
 SIGMA = np.array(
     [
-        [0.075, 0.068, 0.066],
-        [0.048, 0.044, 0.046],
-        [0.058, 0.055, 0.056],
-        [0.052, 0.058, 0.060],
-        [0.004, 0.003, 0.006],
+        [0.104, 0.099, 0.093],
+        [0.071, 0.062, 0.069],
+        [0.054, 0.049, 0.050],
+        [0.064, 0.058, 0.070],
+        [0.086, 0.083, 0.084],
     ]
 )
 
 # Dataset shapes (N instances, M features) for the work-model allocation.
 N = np.array([169, 173, 999, 1257, 425], dtype=float)
-M = np.array([12, 30, 31, 15, 14], dtype=float)
+M = np.array([12, 30, 31, 15, 13], dtype=float)
 TREES = np.array([100, 60, 60], dtype=float)  # baseline vs regularized ensembles
 
 
@@ -117,7 +118,7 @@ def fig_duration_energy(path="duration_energy_comparison.png"):
     for ax, mat, title, unit in zip(
         axes,
         (vals, engs),
-        ("A  Duration per cohort (s)", "B  Energy per cohort (Wh)"),
+        ("A  Duration per cohort (s, est.)", "B  Energy per cohort (Wh, est.)"),
         ("Time (s)", "Energy (Wh)"),
     ):
         for j in range(3):
@@ -130,7 +131,7 @@ def fig_duration_energy(path="duration_energy_comparison.png"):
         _despine(ax)
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(handles, [l.replace("\n", " ") for l in labels], loc="upper center", bbox_to_anchor=(0.5, 1.02), ncol=3, frameon=False)
-    fig.suptitle("Runtime and energy collapse across all five EHR cohorts", color=INK, fontweight="bold", y=1.06)
+    fig.suptitle("Runtime and energy by cohort (estimated shares of measured totals)", color=INK, fontweight="bold", y=1.06)
     fig.tight_layout()
     fig.savefig(path, dpi=300, bbox_inches="tight")
     plt.close(fig)

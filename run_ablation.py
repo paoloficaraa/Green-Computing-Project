@@ -68,6 +68,9 @@ def run_variant(name, settings):
                 continue
 
             df = pd.read_csv(dataset_path)
+            # Drop post-outcome column: capped at 730-day follow-up for
+            # survivors, so it leaks the target.
+            df = df.drop(columns=["Time from HF to Death (days)"], errors="ignore")
             x = df.iloc[:, :-1]
             y = df.iloc[:, -1]
             scores = []

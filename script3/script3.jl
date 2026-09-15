@@ -44,6 +44,12 @@ for dataset in datasets
     end
 
     df = CSV.read(dataset, DataFrame)
+    # Drop post-outcome column: capped at the 730-day follow-up for
+    # survivors, so it leaks the target.
+    leak = intersect(names(df), ["Time from HF to Death (days)"])
+    if !isempty(leak)
+        select!(df, Not(leak))
+    end
     X = df[:, 1:(end-1)]
     y_raw = df[:, end]
     y = coerce(y_raw, OrderedFactor)

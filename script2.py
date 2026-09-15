@@ -42,6 +42,9 @@ for dataset in datasets:
         continue
 
     df = pd.read_csv(dataset)
+    # Drop post-outcome column: 'Time from HF to Death' is capped at the
+    # 730-day follow-up for survivors, so it leaks the target.
+    df = df.drop(columns=["Time from HF to Death (days)"], errors="ignore")
     x = df.iloc[:, :-1]
     y = df.iloc[:, -1]
 
